@@ -17,6 +17,7 @@
 #include <fstream>
 #include <filesystem>
 #include <array>
+#include <cstring>
 
 #include "util.h"
 

@@ -4,6 +4,10 @@
 #include "SA.h"
 #include "ST.h"
 
+inline int64_t max(int64_t a, int64_t b) {
+    return a > b ? a : b;
+}
+
 inline std::string GetStripedStr(const std::string &line) {
     std::string striped = "";
     for (auto ch : line) {
@@ -51,4 +55,62 @@ inline void normalizeLineEndings(std::string& content) {
     }
 
     content = std::move(normalized);
+}
+
+#ifdef _WIN32
+    #define POPEN _popen
+    #define PCLOSE _pclose
+#else
+    #define POPEN popen
+    #define PCLOSE pclose
+#endif
+inline std::string executeCommandAndRead(const std::string& command) {
+    std::string result;
+    char buffer[100000];
+    
+    FILE* pipe = POPEN(command.c_str(), "r");
+    if (!pipe) {
+        throw std::runtime_error("执行命令失败");
+    }
+    
+    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+        result += buffer;
+    }
+    
+    int status = PCLOSE(pipe);
+    if (status == -1) {
+        throw std::runtime_error("关闭管道失败");
+    }
+    
+    return result;
+}
+
+inline std::pair<std::string, std::string> checkAndExtractSVNInfo(const std::string &line, const bool is_svn) {
+    if (!is_svn) {
+        return std::pair<std::string, std::string> ("", line);
+    }
+    std::string buf;
+    int flag = 0;
+    for (int i = 0; i < line.size(); i++) { 
+        if (line[i] == ')') {
+            return std::pair<std::string, std::string> (buf, line.substr(i + 2, (int)line.size() - (i + 2)));
+        } else if (line[i] == '+') {
+            flag = 1;
+        }
+
+        if (!flag) {
+            buf.push_back(line[i]);
+        }
+    }
+
+    return std::pair<std::string, std::string> ("", line);
+}
+
+inline std::string fitString(const std::string &str, int num) {
+    std::string ret = str;
+    while (ret.size() < num) {
+        ret.push_back(' ');
+    }
+    
+    return ret;
 }

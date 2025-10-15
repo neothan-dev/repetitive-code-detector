@@ -2,7 +2,7 @@
 #include "FileType_Lua.h"
 
 bool FileTypeLua::CheckPush(const std::string &line) {
-    std::string striped = GetStripedStr(line);
+    const std::string &striped = GetStripedStr(line);
 
     if (striped.empty() || striped == "end"|| striped.size() >= 2 && striped.substr(0, 2) == "--") return false;
 

@@ -9,20 +9,29 @@ namespace fs = std::filesystem;
 
 constexpr int64_t B = 131, MOD = 1000000007;
 
-void processBlockContent(const std::string& filename, std::vector<std::pair<std::string, int32_t> > &lsi) {
+void processBlockContent(const std::string& filename, const std::vector<std::pair<std::string, std::pair<int32_t, std::string> > > &lsi, const bool is_svn) {
     int32_t n = lsi.size();
 
     std::vector<std::string> lines;
     std::vector<int32_t> lineIdx;
+    std::vector<std::string> svninfo;
     for (auto psi : lsi) {
         lines.push_back(psi.first);
-        lineIdx.push_back(psi.second);
+        lineIdx.push_back(psi.second.first);
+        svninfo.push_back(psi.second.second);
     }
+
+    int mxSVNInfoLen = 0;
+    for (auto &str : svninfo) {
+        mxSVNInfoLen = max(mxSVNInfoLen, (int64_t)str.size());
+    }
+
     lines.insert(lines.begin(), "");
     lineIdx.insert(lineIdx.begin(), 0);
+    svninfo.insert(svninfo.begin(), "");
 
     std::vector<int32_t> allHs;
-    for (auto &str : lines) {
+    for (const auto &str : lines) {
         int64_t nowHs = 0;
         for (auto ch : str) {
             nowHs = (nowHs * B % MOD + ch) % MOD;
@@ -125,6 +134,7 @@ void processBlockContent(const std::string& filename, std::vector<std::pair<std:
     std::cout << "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= 相关内容 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << endl;
     int32_t mxDigiLen = countDigit(lineIdx.back());
     for (int32_t i = 1; i <= n; i++) {
+        if (is_svn) std::cout << fitString(svninfo[i], mxSVNInfoLen) << "\t";
         std::pii nowp = mp[lineIdx[i]];
         if (nowp.second) {
             std::cout << (nowp.second < 10 ? "↓" : "↑") << numToStringWithBlank(reIdx[lineIdx[i]], 2) << " ";
@@ -148,6 +158,7 @@ void processBlockContent(const std::string& filename, std::vector<std::pair<std:
         }
         // std::cout << p.first << ' ' << p.second << endl;
         for (int32_t j = 0; j < ansLen; j++) {
+            if (is_svn) std::cout << fitString(svninfo[p.first + j], mxSVNInfoLen) << "\t";
             std::cout << lineIdx[p.first + j] << " - " << lineIdx[p.second + j] << ": |" << lines[p.first + j] << endl;
         }
         // std::cout << "=-=-=-=-=-=-=-=-=-=" << endl;
@@ -166,18 +177,20 @@ void processBlockContent(const std::string& filename, std::vector<std::pair<std:
     delete pst;
 }
 
-int32_t processFileContent(const std::string& filename, const std::string& content, std::unique_ptr<FileType> fileType) {
+int32_t processFileContent(const std::string& filename, const std::string& content, std::unique_ptr<FileType> fileType, const bool is_svn) {
     // std::cout << "内容大小: " << content.size() << " 字节" << endl;
     std::string noChineseContent = removeChinese(content);
     // 在这里添加你的实际处理逻辑
-    std::vector<std::pair<std::string, int32_t> > lines;
+    std::vector<std::pair<std::string, std::pair<int32_t, std::string> > > lines;
     std::string strBuf;
 
     int32_t lineCnt = 1;
     for (auto ch : noChineseContent) {
         if (ch == '\n') {
-            if (fileType->CheckPush(strBuf)) {
-                lines.push_back(std::pair<std::string, int32_t> (strBuf, lineCnt));
+            const std::pair<std::string, std::string> &afterSVNProcessed = checkAndExtractSVNInfo(strBuf, is_svn);
+            const std::string &svnInfo = afterSVNProcessed.first, &realContent = afterSVNProcessed.second;
+            if (fileType->CheckPush(realContent)) {
+                lines.push_back(std::pair<std::string, std::pair<int32_t, std::string>> (realContent, std::pair<int32_t, std::string> (lineCnt, svnInfo)));
             }
             strBuf.clear();
             lineCnt++;
@@ -186,18 +199,20 @@ int32_t processFileContent(const std::string& filename, const std::string& conte
         }
     }
     if (!strBuf.empty()) {
-        if (fileType->CheckPush(strBuf)) {
-            lines.push_back(std::pair<std::string, int32_t> (strBuf, lineCnt));
+        const std::pair<std::string, std::string> &afterSVNProcessed = checkAndExtractSVNInfo(strBuf, is_svn);
+        const std::string &svnInfo = afterSVNProcessed.first, &realContent = afterSVNProcessed.second;
+        if (fileType->CheckPush(realContent)) {
+            lines.push_back(std::pair<std::string, std::pair<int32_t, std::string>> (realContent, std::pair<int32_t, std::string> (lineCnt, svnInfo)));
         }
         strBuf.clear();
     }
 
-    std::vector<std::pair<std::string, int32_t> > blkLinesBuf;
+    std::vector<std::pair<std::string, std::pair<int32_t, std::string> > > blkLinesBuf;
     for (auto psi : lines) {
-        std::string str = psi.first;
+        const std::string &str = psi.first;
         if (fileType->CheckSplitLine(str)) {
             if (blkLinesBuf.size() > 0) {
-                processBlockContent(filename, blkLinesBuf);
+                processBlockContent(filename, blkLinesBuf, is_svn);
             }
             blkLinesBuf.clear();
         }
@@ -206,28 +221,32 @@ int32_t processFileContent(const std::string& filename, const std::string& conte
     }
 
     if (blkLinesBuf.size() > 0) {
-        processBlockContent(filename, blkLinesBuf);
+        processBlockContent(filename, blkLinesBuf, is_svn);
     }
 
     return lineCnt;
 }
 
 // 读取文件内容
-std::string readFileContent(const fs::path& filepath) {
+std::string readFileContent(const fs::path& filepath, const bool is_svn) {
     std::ifstream file(filepath, std::ios::binary);
     if (!file.is_open()) {
         throw std::runtime_error("无法打开文件: " + filepath.string());
     }
 
-    // 获取文件大小
-    file.seekg(0, std::ios::end);
-    size_t fileSize = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    // 读取内容
     std::string content;
-    content.resize(fileSize);
-    file.read(&content[0], fileSize);
+    if (is_svn) {
+        content = executeCommandAndRead("svn blame -v " + filepath.string());
+    } else {
+        // 获取文件大小
+        file.seekg(0, std::ios::end);
+        size_t fileSize = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        // 读取内容
+        content.resize(fileSize);
+        file.read(&content[0], fileSize);
+    }
 
     // 统一换行符为 \n
     normalizeLineEndings(content);
@@ -236,14 +255,14 @@ std::string readFileContent(const fs::path& filepath) {
 }
 
 // 递归遍历目录
-std::pair<int32_t, std::pii> processDirectory(const fs::path& directory) {
+std::pair<int32_t, std::pii> processDirectory(const fs::path& directory, const bool is_svn) {
     std::pair<int32_t, std::pii> record;
 
     try {
         for (const auto& entry : fs::directory_iterator(directory)) {
             if (entry.is_directory()) {
                 // 如果是目录，递归处理
-                std::pair<int32_t, std::pii> nxRecord = processDirectory(entry.path());
+                std::pair<int32_t, std::pii> nxRecord = processDirectory(entry.path(), is_svn);
                 record.first += nxRecord.first;
                 record.second.first += nxRecord.second.first;
                 record.second.second += nxRecord.second.second;
@@ -254,8 +273,8 @@ std::pair<int32_t, std::pii> processDirectory(const fs::path& directory) {
                 if (fileType) {
                     // 如果是普通文件，读取并处理
                     try {
-                        std::string content = readFileContent(entry.path());
-                        record.second.first += processFileContent(entry.path().string(), content, std::move(fileType));
+                        const std::string &content = readFileContent(entry.path(), is_svn);
+                        record.second.first += processFileContent(entry.path().string(), content, std::move(fileType), is_svn);
                         record.second.second += content.size();
                         record.first++;
                     } catch (const std::exception& e) {
@@ -271,7 +290,7 @@ std::pair<int32_t, std::pii> processDirectory(const fs::path& directory) {
     return record;
 }
 
-signed main(signed argc, char* argv[]) {
+int32_t main(int32_t argc, char* argv[]) {
     
 #if defined(_WIN32)
     system("chcp 65001 > nul");
@@ -282,15 +301,17 @@ signed main(signed argc, char* argv[]) {
 
 	std::ios::sync_with_stdio(false); std::cin.tie(nullptr); std::cout.tie(nullptr);
 
-    if (argc != 2) {
-        std::cerr << "用法: " << argv[0] << " <目录路径>" << endl;
+    if (!(argc == 2 || (argc == 3 && strcmp(argv[2], "--svn") == 0))) {
+        std::cerr << "用法: " << argv[0] << " <目录路径> [--svn]" << endl;
         std::cerr << "将会遍历目录下所有 .lua / .cs 文件，输出结果在 output.txt " << endl;
+        std::cerr << "如果带上 --svn 参数，则会同时引入提交人信息，但要求目录是svn目录" << endl;
         return 1;
     }
 
     freopen("output.txt", "w", stdout);
 
     fs::path directory(argv[1]);
+    bool is_svn = (argc == 3 && strcmp(argv[2], "--svn") == 0);
 
     if (!fs::exists(directory)) {
         std::cerr << "错误: 目录不存在 - " << directory << endl;
@@ -304,7 +325,7 @@ signed main(signed argc, char* argv[]) {
 
     std::cout << "开始处理目录: " << directory << endl;
     double st = clock();
-    std::pair<int32_t, std::pii> record = processDirectory(directory);
+    std::pair<int32_t, std::pii> record = processDirectory(directory, is_svn);
     double ed = clock();
     std::cout << "处理完成!" << endl;
     std::cout << "共处理文件: " << record.first << " 个." << endl;

@@ -31,7 +31,7 @@ bool FileTypeCSharp::CheckSplitLine(const std::string& line) {
 }
 
 bool FileTypeCSharp::CheckPush(const std::string &line) {
-    std::string striped = GetStripedStr(line);
+    const std::string &striped = GetStripedStr(line);
 
     if (striped.empty() || striped == "{" || striped == "}" || striped.size() >= 2 && striped.substr(0, 2) == "//") return false;
 
