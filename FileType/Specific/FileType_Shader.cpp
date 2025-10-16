@@ -11,9 +11,7 @@ bool FileTypeShader::CheckPush(const std::string &line) {
 
 bool FileTypeShader::CheckSplitLine(const std::string &line) {
     // 去掉前后空格
-    std::string trimmed = line;
-    trimmed.erase(0, trimmed.find_first_not_of(" \t"));
-    trimmed.erase(trimmed.find_last_not_of(" \t\r\n") + 1);
+    const std::string &trimmed = GetStripedStr(line);
 
     // Shader 函数声明常见形式：
     // [返回类型] 函数名(参数...) { 或 ;

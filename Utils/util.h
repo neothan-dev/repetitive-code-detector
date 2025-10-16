@@ -98,15 +98,15 @@ inline std::string getSVNInfo(const std::string &filepath) {
     }
 }
 
-inline std::pair<std::string, std::string> checkAndExtractSVNInfo(const std::string &line, const bool is_svn) {
+inline std::string checkAndExtractSVNInfo(const std::string &line, const bool is_svn) {
     if (!is_svn) {
-        return std::pair<std::string, std::string> ("", line);
+        return "";
     }
     std::string buf;
     int32_t flag = 0;
     for (int32_t i = 0; i < line.size(); i++) { 
         if (line[i] == ')') {
-            return std::pair<std::string, std::string> (buf, line.substr(i + 2, (int32_t)line.size() - (i + 2)));
+            return buf;
         } else if (line[i] == '+') {
             flag = 1;
         }
@@ -116,7 +116,7 @@ inline std::pair<std::string, std::string> checkAndExtractSVNInfo(const std::str
         }
     }
 
-    return std::pair<std::string, std::string> ("", line);
+    return "";
 }
 
 inline std::string fitString(const std::string &str, int num) {

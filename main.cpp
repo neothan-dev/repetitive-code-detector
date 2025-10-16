@@ -116,26 +116,29 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
 
 
     std::vector<std::string> svninfo(1, "");
-    std::string svnContent = getSVNInfo(filename);
-    std::vector<std::string> svnlines(1, "");
-    std::string strBuf;
-    for (auto ch : svnContent) {
-        if (ch == '\n') {
+    if (is_svn) {
+        const std::string &svnContent = getSVNInfo(filename);
+        std::vector<std::string> svnlines(1, "");
+        std::string strBuf;
+        for (auto ch : svnContent) {
+            if (ch == '\n') {
+                svnlines.eb(strBuf);
+                strBuf.clear();
+            } else {
+                strBuf.push_back(ch);
+            }
+        }
+        if (!strBuf.empty()) {
             svnlines.eb(strBuf);
             strBuf.clear();
-        } else {
-            strBuf.push_back(ch);
         }
-    }
-    if (!strBuf.empty()) {
-        svnlines.eb(strBuf);
-        strBuf.clear();
-    }
-    
-    for (int i = 1; i <= n; i++) {
-        int idx = lineIdx[i];
-        const std::pair<std::string, std::string> &afterSVNProcessed = checkAndExtractSVNInfo(svnlines[idx], is_svn);
-        svninfo.eb(afterSVNProcessed.first);
+        for (int i = 1; i <= n; i++) {
+            int idx = lineIdx[i];
+            const std::string &afterSVNProcessed = checkAndExtractSVNInfo(svnlines[idx], is_svn);
+            svninfo.eb(afterSVNProcessed);
+        }
+    } else {
+        svninfo = std::vector<std::string>(n + 1, "");
     }
 
     auto countDigit = [&](int64_t num) -> int64_t {
@@ -227,7 +230,8 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
 
 int32_t processFileContent(const std::string& filename, const std::string& content, std::unique_ptr<FileType> fileType, const bool is_svn) {
     // std::cout << "内容大小: " << content.size() << " 字节" << endl;
-    std::string noChineseContent = removeChinese(content);
+    // std::string noChineseContent = removeChinese(content);
+    const std::string &noChineseContent = content;
     // 在这里添加你的实际处理逻辑
     std::vector<std::pair<std::string, std::pair<int32_t, std::string> > > lines;
     std::string strBuf;
@@ -310,7 +314,7 @@ std::pair<int32_t, std::pii> processDirectory(const fs::path& directory, const b
                 record.second.second += nxRecord.second.second;
 
             } else if (entry.is_regular_file()) {
-                std::string ext = entry.path().extension().string();
+                const std::string &ext = entry.path().extension().string();
                 std::unique_ptr<FileType> fileType = FileType::GetFileType(ext);
                 if (fileType) {
                     // 如果是普通文件，读取并处理
