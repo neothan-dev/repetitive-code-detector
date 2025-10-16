@@ -21,7 +21,7 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
         svninfo.push_back(psi.second.second);
     }
 
-    int mxSVNInfoLen = 0;
+    int32_t mxSVNInfoLen = 0;
     for (auto &str : svninfo) {
         mxSVNInfoLen = max(mxSVNInfoLen, (int64_t)str.size());
     }
@@ -43,48 +43,78 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
 
     ST* pst = new ST(psa->sa);
 
-    int32_t ansLen = 0;
-    std::vector<std::pii> ans;
+    std::vector<std::pair<std::pii, int32_t> > ans;
 
-    int32_t l = 0, r = n / 2 + 1;
-    auto check = [&](int32_t mid) -> bool {
-        bool ret = false;
+    // int32_t l = 0, r = n / 2 + 1;
+    // auto check = [&](int32_t mid) -> bool {
+    //     bool ret = false;
 
-        int32_t lstPos = -1;
-        for (int32_t i = 1; i <= n + 1; i++) {
-            if (i <= n && psa->height[i] >= mid) {
-                if (lstPos == -1) {
-                    lstPos = i - 1;
-                }
-            } else {
-                if (lstPos != -1) {
-                    int32_t mnIdx = pst->queryMin(lstPos, i - 1);
-                    int32_t mxIdx = pst->queryMax(lstPos, i - 1);
-                    if (mxIdx - mnIdx >= mid) {
-                        if (ansLen <= mid) {
-                            if (ansLen < mid) {
-                                ansLen = mid;
-                                ans.clear();
-                            }
-                            ans.push_back({mnIdx, mxIdx});
-                        }
+    //     int32_t lstPos = -1;
+    //     for (int32_t i = 1; i <= n + 1; i++) {
+    //         if (i <= n && psa->height[i] >= mid) {
+    //             if (lstPos == -1) {
+    //                 lstPos = i - 1;
+    //             }
+    //         } else {
+    //             if (lstPos != -1) {
+    //                 int32_t mnIdx = pst->queryMin(lstPos, i - 1);
+    //                 int32_t mxIdx = pst->queryMax(lstPos, i - 1);
+    //                 if (mxIdx - mnIdx >= mid) {
+    //                     if (ans.empty() || ans.back().second <= mid) {
+    //                         if (ans.back().second < mid) {
+    //                             ans.clear();
+    //                         }
+    //                         ans.push_back({std::pii(mnIdx, mxIdx), mid});
+    //                     }
 
-                        ret = true;
-                    }
-                }
-                lstPos = -1;
+    //                     ret = true;
+    //                 }
+    //             }
+    //             lstPos = -1;
+    //         }
+    //     }
+
+    //     return ret;
+    // };
+    // while (l + 1 < r) {
+    //     int32_t mid = l + r >> 1;
+    //     if (check(mid)) l = mid;
+    //     else r = mid;
+    // }
+
+    for (int32_t i = 1; i <= n; i++) {
+        int32_t mxLen = 0;
+        int32_t rk = psa->rk[i];
+        int32_t pre;
+
+        pre = INF;
+        for (int32_t j = rk - 1; j > 0; j--) {
+            pre = min(pre, psa->height[j + 1]);
+            if (pre == 0) break;
+            int32_t idx = psa->sa[j];
+            if (idx < i) continue;
+            if (idx - i <= pre) {
+                mxLen = max(mxLen, idx - i);
             }
         }
 
-        return ret;
-    };
-    while (l + 1 < r) {
-        int32_t mid = l + r >> 1;
-        if (check(mid)) l = mid;
-        else r = mid;
+        pre = INF;
+        for (int32_t j = rk + 1; j <= n; j++) {
+            pre = min(pre, psa->height[j]);
+            if (pre == 0) break;
+            int32_t idx = psa->sa[j];
+            if (idx < i) continue;
+            if (idx - i <= pre) {
+                mxLen = max(mxLen, idx - i);
+            }
+        }
+        
+        if (mxLen) {
+            ans.eb(std::pii(i, i + mxLen), mxLen);
+        }
     }
 
-    if (ansLen <= 2) {
+    if (ans.empty()) {
         return;
     }
 
@@ -117,7 +147,8 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
     std::map<int32_t, int32_t> reIdx;
     std::map<int32_t, std::pii> mp;
     for (int32_t i = 0; i < ans.size(); i++) {
-        std::pii p = ans[i];
+        std::pii p = ans[i].first;
+        int32_t ansLen = ans[i].second;
         int32_t flag = 1;
         if (p.first + ansLen == p.second) {
             flag = 2;
@@ -149,10 +180,10 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
     }
     std::cout << "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Details =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=" << endl;
 
-    std::cout << "Repetitive Line Lenth -> " << ansLen << endl;
     std::cout << "===================================================================================================================================================================" << endl;
     for (int32_t i = 0; i < ans.size(); i++) {
-        std::pii p = ans[i];
+        std::pii p = ans[i].first;
+        int32_t ansLen = ans[i].second;
         if (p.first + ansLen == p.second) {
             std::cout << "*********************************************************************发现风险极高的重复内容***********************************************************************" << endl;
         }

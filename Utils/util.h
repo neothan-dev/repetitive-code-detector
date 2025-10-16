@@ -8,6 +8,10 @@ inline int64_t max(int64_t a, int64_t b) {
     return a > b ? a : b;
 }
 
+inline int64_t min(int64_t a, int64_t b) {
+    return a < b ? a : b;
+}
+
 inline std::string GetStripedStr(const std::string &line) {
     std::string striped = "";
     for (auto ch : line) {
@@ -77,7 +81,7 @@ inline std::string executeCommandAndRead(const std::string& command) {
         result += buffer;
     }
     
-    int status = PCLOSE(pipe);
+    int32_t status = PCLOSE(pipe);
     if (status == -1) {
         throw std::runtime_error("关闭管道失败");
     }
@@ -90,10 +94,10 @@ inline std::pair<std::string, std::string> checkAndExtractSVNInfo(const std::str
         return std::pair<std::string, std::string> ("", line);
     }
     std::string buf;
-    int flag = 0;
-    for (int i = 0; i < line.size(); i++) { 
+    int32_t flag = 0;
+    for (int32_t i = 0; i < line.size(); i++) { 
         if (line[i] == ')') {
-            return std::pair<std::string, std::string> (buf, line.substr(i + 2, (int)line.size() - (i + 2)));
+            return std::pair<std::string, std::string> (buf, line.substr(i + 2, (int32_t)line.size() - (i + 2)));
         } else if (line[i] == '+') {
             flag = 1;
         }

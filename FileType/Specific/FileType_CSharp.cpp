@@ -4,7 +4,15 @@
 bool FileTypeCSharp::CheckPush(const std::string &line) {
     const std::string &striped = GetStripedStr(line);
 
-    if (striped.empty() || striped == "{" || striped == "}" || striped.size() >= 2 && striped.substr(0, 2) == "//") return false;
+    if (striped.empty() 
+        || striped == "{" 
+        || striped == "}" 
+        || striped == "*"
+        || striped == "#endregion" 
+        || striped == "#endif" 
+        || striped == "#region" 
+        || striped.size() >= 2 && striped.substr(0, 2) == "//") 
+        return false;
 
     return true;
 }
