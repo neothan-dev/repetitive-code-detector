@@ -34,6 +34,7 @@ set(SOURCES
     FileType/FileType.cpp
     FileType/Specific/FileType_CSharp.cpp
     FileType/Specific/FileType_Lua.cpp
+    FileType/Specific/FileType_Shader.cpp
 )
 
 # Header files
@@ -44,6 +45,7 @@ set(HEADERS
     FileType/FileType.h
     FileType/Specific/FileType_CSharp.h
     FileType/Specific/FileType_Lua.h
+    FileType/Specific/FileType_Shader.h
 )
 
 # Create executable

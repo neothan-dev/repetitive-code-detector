@@ -51,8 +51,8 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
         bool ret = false;
 
         int32_t lstPos = -1;
-        for (int32_t i = 1; i <= n; i++) {
-            if (psa->height[i] >= mid) {
+        for (int32_t i = 1; i <= n + 1; i++) {
+            if (i <= n && psa->height[i] >= mid) {
                 if (lstPos == -1) {
                     lstPos = i - 1;
                 }

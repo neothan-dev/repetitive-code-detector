@@ -2,9 +2,9 @@
 
 #include "../FileType.h"
 
-class FileTypeLua : public FileType {
+class FileTypeShader : public FileType {
 public:
-    FileTypeLua() : FileType(".lua") {}
+    FileTypeShader() : FileType(".Shader") {}
     bool CheckPush(const std::string &line) override;
     bool CheckSplitLine(const std::string &line) override;
 };

@@ -6,8 +6,8 @@ class FileType {
 public:
     FileType(const std::string& extension) : extension(extension) {}
     virtual ~FileType() = default;
-    virtual bool CheckSplitLine(const std::string &line) = 0;
     virtual bool CheckPush(const std::string &line) = 0;
+    virtual bool CheckSplitLine(const std::string &line) = 0;
 
     virtual std::string getExtension() {
         return extension;

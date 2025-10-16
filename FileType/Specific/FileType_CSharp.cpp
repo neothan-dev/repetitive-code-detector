@@ -1,6 +1,14 @@
 #include "common.h"
 #include "FileType_CSharp.h"
 
+bool FileTypeCSharp::CheckPush(const std::string &line) {
+    const std::string &striped = GetStripedStr(line);
+
+    if (striped.empty() || striped == "{" || striped == "}" || striped.size() >= 2 && striped.substr(0, 2) == "//") return false;
+
+    return true;
+}
+
 bool FileTypeCSharp::CheckSplitLine(const std::string& line) {
     // 去掉前后空格
     std::string trimmed = line;
@@ -28,12 +36,4 @@ bool FileTypeCSharp::CheckSplitLine(const std::string& line) {
     return std::regex_match(trimmed, methodPattern)
         || std::regex_match(trimmed, typePattern)
         || std::regex_match(trimmed, namespacePattern);
-}
-
-bool FileTypeCSharp::CheckPush(const std::string &line) {
-    const std::string &striped = GetStripedStr(line);
-
-    if (striped.empty() || striped == "{" || striped == "}" || striped.size() >= 2 && striped.substr(0, 2) == "//") return false;
-
-    return true;
 }

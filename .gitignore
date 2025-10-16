@@ -4,3 +4,4 @@ output.txt
 _test/
 .vscode/
 install-mingw.sh
+CMakeFiles/
