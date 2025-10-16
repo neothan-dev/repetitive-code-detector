@@ -19,8 +19,6 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
         lineIdx.push_back(psi.second.first);
     }
 
-    int32_t mxSVNInfoLen = 0;
-
     lines.insert(lines.begin(), "");
     lineIdx.insert(lineIdx.begin(), 0);
 
@@ -140,6 +138,12 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
     } else {
         svninfo = std::vector<std::string>(n + 1, "");
     }
+
+    int32_t mxSVNInfoLen = 0;
+    for (const std::string &str : svninfo) {
+        mxSVNInfoLen = max(mxSVNInfoLen, str.size());
+    }
+
 
     auto countDigit = [&](int64_t num) -> int64_t {
         int64_t ret = 0;
