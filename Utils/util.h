@@ -89,6 +89,15 @@ inline std::string executeCommandAndRead(const std::string& command) {
     return result;
 }
 
+inline std::string getSVNInfo(const std::string &filepath) {
+    static std::map<std::string, std::string> rem;
+    if (rem.count(filepath)) {
+        return rem[filepath];
+    } else {
+        return rem[filepath] = executeCommandAndRead("svn blame -v " + filepath);
+    }
+}
+
 inline std::pair<std::string, std::string> checkAndExtractSVNInfo(const std::string &line, const bool is_svn) {
     if (!is_svn) {
         return std::pair<std::string, std::string> ("", line);

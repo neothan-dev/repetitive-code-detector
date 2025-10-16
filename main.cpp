@@ -14,21 +14,15 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
 
     std::vector<std::string> lines;
     std::vector<int32_t> lineIdx;
-    std::vector<std::string> svninfo;
     for (auto psi : lsi) {
         lines.push_back(psi.first);
         lineIdx.push_back(psi.second.first);
-        svninfo.push_back(psi.second.second);
     }
 
     int32_t mxSVNInfoLen = 0;
-    for (auto &str : svninfo) {
-        mxSVNInfoLen = max(mxSVNInfoLen, (int64_t)str.size());
-    }
 
     lines.insert(lines.begin(), "");
     lineIdx.insert(lineIdx.begin(), 0);
-    svninfo.insert(svninfo.begin(), "");
 
     std::vector<int32_t> allHs;
     for (const auto &str : lines) {
@@ -120,6 +114,29 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
 
     sort(ans.begin(), ans.end());
 
+
+    std::vector<std::string> svninfo(1, "");
+    std::string svnContent = getSVNInfo(filename);
+    std::vector<std::string> svnlines(1, "");
+    std::string strBuf;
+    for (auto ch : svnContent) {
+        if (ch == '\n') {
+            svnlines.eb(strBuf);
+            strBuf.clear();
+        } else {
+            strBuf.push_back(ch);
+        }
+    }
+    if (!strBuf.empty()) {
+        svnlines.eb(strBuf);
+        strBuf.clear();
+    }
+    
+    for (int i = 1; i <= n; i++) {
+        int idx = lineIdx[i];
+        const std::pair<std::string, std::string> &afterSVNProcessed = checkAndExtractSVNInfo(svnlines[idx], is_svn);
+        svninfo.eb(afterSVNProcessed.first);
+    }
 
     auto countDigit = [&](int64_t num) -> int64_t {
         int64_t ret = 0;
@@ -218,8 +235,7 @@ int32_t processFileContent(const std::string& filename, const std::string& conte
     int32_t lineCnt = 1;
     for (auto ch : noChineseContent) {
         if (ch == '\n') {
-            const std::pair<std::string, std::string> &afterSVNProcessed = checkAndExtractSVNInfo(strBuf, is_svn);
-            const std::string &svnInfo = afterSVNProcessed.first, &realContent = afterSVNProcessed.second;
+            const std::string &svnInfo = "", &realContent = strBuf;
             if (fileType->CheckPush(realContent)) {
                 lines.push_back(std::pair<std::string, std::pair<int32_t, std::string>> (realContent, std::pair<int32_t, std::string> (lineCnt, svnInfo)));
             }
@@ -230,8 +246,7 @@ int32_t processFileContent(const std::string& filename, const std::string& conte
         }
     }
     if (!strBuf.empty()) {
-        const std::pair<std::string, std::string> &afterSVNProcessed = checkAndExtractSVNInfo(strBuf, is_svn);
-        const std::string &svnInfo = afterSVNProcessed.first, &realContent = afterSVNProcessed.second;
+        const std::string &svnInfo = "", &realContent = strBuf;
         if (fileType->CheckPush(realContent)) {
             lines.push_back(std::pair<std::string, std::pair<int32_t, std::string>> (realContent, std::pair<int32_t, std::string> (lineCnt, svnInfo)));
         }
@@ -266,18 +281,14 @@ std::string readFileContent(const fs::path& filepath, const bool is_svn) {
     }
 
     std::string content;
-    if (is_svn) {
-        content = executeCommandAndRead("svn blame -v " + filepath.string());
-    } else {
-        // 获取文件大小
-        file.seekg(0, std::ios::end);
-        size_t fileSize = file.tellg();
-        file.seekg(0, std::ios::beg);
+    // 获取文件大小
+    file.seekg(0, std::ios::end);
+    size_t fileSize = file.tellg();
+    file.seekg(0, std::ios::beg);
 
-        // 读取内容
-        content.resize(fileSize);
-        file.read(&content[0], fileSize);
-    }
+    // 读取内容
+    content.resize(fileSize);
+    file.read(&content[0], fileSize);
 
     // 统一换行符为 \n
     normalizeLineEndings(content);
