@@ -1,17 +1,25 @@
 #include "common.h"
 #include "FileType_CSharp.h"
 
+FileTypeCSharp::FileTypeCSharp() : FileType(".cs") {
+    this->FileTypeCSharp::ignoredLineHsSet = {
+        getHash("{"),
+        getHash("}"),
+        getHash("*"),
+        getHash("#endregion"),
+        getHash("#endif"),
+        getHash("#region"),
+
+    };
+}
+
 bool FileTypeCSharp::CheckPush(const std::string &line) {
-    const std::string &striped = GetStripedStr(line);
+    const std::string &striped = getStripedStr(line, "//");
+
+    const int32_t stripedHs = getHash(striped);
 
     if (striped.empty() 
-        || striped == "{" 
-        || striped == "}" 
-        || striped == "*"
-        || striped == "#endregion" 
-        || striped == "#endif" 
-        || striped == "#region" 
-        || striped.size() >= 2 && striped.substr(0, 2) == "//") 
+        || ignoredLineHsSet.count(stripedHs)) 
         return false;
 
     return true;
@@ -19,7 +27,7 @@ bool FileTypeCSharp::CheckPush(const std::string &line) {
 
 bool FileTypeCSharp::CheckSplitLine(const std::string& line) {
     // 去掉前后空格
-    const std::string &trimmed = GetStripedStr(line);
+    const std::string &trimmed = getStripedStr(line, "//");
 
     // 方法声明模式
     static const std::regex methodPattern(
@@ -42,4 +50,12 @@ bool FileTypeCSharp::CheckSplitLine(const std::string& line) {
     return std::regex_match(trimmed, methodPattern)
         || std::regex_match(trimmed, typePattern)
         || std::regex_match(trimmed, namespacePattern);
+}
+
+std::pair<bool, bool> FileTypeCSharp::CheckIgnoreSwitch(const std::string &line, const bool outsideStatus) {
+    const std::string &striped = getStripedStr(line);
+    if (striped.size() > 2 && striped.substr(0, 2) == "\\*" && outsideStatus == false) return std::pair<bool, bool> (true, true);
+    if (striped.size() > 2 && striped.substr(0, 2) == "*\\" && outsideStatus == true) return std::pair<bool, bool> (false, true);
+    
+    return std::pair<bool, bool> (outsideStatus, false);
 }

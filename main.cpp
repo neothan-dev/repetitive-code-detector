@@ -7,8 +7,6 @@
 
 namespace fs = std::filesystem;
 
-constexpr int64_t B = 131, MOD = 1000000007;
-
 void processBlockContent(const std::string& filename, const std::vector<std::pair<std::string, std::pair<int32_t, std::string> > > &lsi, const bool is_svn) {
     int32_t n = lsi.size();
 
@@ -24,11 +22,7 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
 
     std::vector<int32_t> allHs;
     for (const auto &str : lines) {
-        int64_t nowHs = 0;
-        for (auto ch : str) {
-            nowHs = (nowHs * B % MOD + ch) % MOD;
-        }
-        allHs.push_back(nowHs);
+        allHs.push_back(getHash(str));
     }
 
     SA* psa = new SA(allHs);
@@ -74,7 +68,7 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
     //     else r = mid;
     // }
 
-    for (int32_t i = 1; i <= n; i++) {
+    for (int32_t i = 1; i <= n;) {
         int32_t mxLen = 0;
         int32_t rk = psa->rk[i];
         int32_t pre;
@@ -103,6 +97,9 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
         
         if (mxLen) {
             ans.eb(std::pii(i, i + mxLen), mxLen);
+            i += 2 * mxLen;
+        } else {
+            i++;
         }
     }
 
@@ -111,6 +108,11 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
     }
 
     sort(ans.begin(), ans.end());
+    int fstLine = INF, lstLine = -INF;
+    for (auto p : ans) {
+        fstLine = min(fstLine, p.first.first);
+        lstLine = max(lstLine, p.first.second);
+    }
 
 
     std::vector<std::string> svninfo(1, "");
@@ -188,7 +190,7 @@ void processBlockContent(const std::string& filename, const std::vector<std::pai
     std::cout << "文件: " << filename << " 发现可疑重复内容：" << endl;
     std::cout << "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= 相关内容 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << endl;
     int32_t mxDigiLen = countDigit(lineIdx.back());
-    for (int32_t i = 1; i <= n; i++) {
+    for (int32_t i = max(1, fstLine - 30); i <= min(n, lstLine + 30); i++) {
         if (is_svn) std::cout << fitString(svninfo[i], mxSVNInfoLen) << "\t";
         std::pii nowp = mp[lineIdx[i]];
         if (nowp.second) {
@@ -241,10 +243,13 @@ int32_t processFileContent(const std::string& filename, const std::string& conte
     std::string strBuf;
 
     int32_t lineCnt = 1;
+    bool ignoreSwitch = false;
     for (auto ch : noChineseContent) {
         if (ch == '\n') {
             const std::string &svnInfo = "", &realContent = strBuf;
-            if (fileType->CheckPush(realContent)) {
+            std::pair<bool, bool> switchResult = fileType->CheckIgnoreSwitch(realContent, ignoreSwitch);
+            ignoreSwitch = switchResult.first;
+            if (fileType->CheckPush(realContent) && !ignoreSwitch && !switchResult.second) {
                 lines.push_back(std::pair<std::string, std::pair<int32_t, std::string>> (realContent, std::pair<int32_t, std::string> (lineCnt, svnInfo)));
             }
             strBuf.clear();
@@ -283,6 +288,7 @@ int32_t processFileContent(const std::string& filename, const std::string& conte
 
 // 读取文件内容
 std::string readFileContent(const fs::path& filepath, const bool is_svn) {
+    std::cerr << "处理文件：" << filepath << endl;
     std::ifstream file(filepath, std::ios::binary);
     if (!file.is_open()) {
         throw std::runtime_error("无法打开文件: " + filepath.string());

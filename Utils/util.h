@@ -12,11 +12,18 @@ inline int64_t min(int64_t a, int64_t b) {
     return a < b ? a : b;
 }
 
-inline std::string GetStripedStr(const std::string &line) {
+inline std::string getStripedStr(const std::string &line, const std::string commentIdentifer = "") {
     std::string striped = "";
     for (auto ch : line) {
         if (ch != ' ' && ch != '\n' && ch != '\t') {
             striped.push_back(ch);
+        }
+    }
+
+    if (!commentIdentifer.empty()) {
+        int idx = striped.find(commentIdentifer);
+        if (idx != -1) {
+            striped = striped.substr(0, idx);
         }
     }
     return striped;
@@ -126,4 +133,14 @@ inline std::string fitString(const std::string &str, int num) {
     }
     
     return ret;
+}
+
+constexpr int64_t B = 131, MOD = 1000000007;
+inline int32_t getHash(const std::string &str) {
+    int64_t nowHs = 0;
+    for (auto &ch : str) {
+        nowHs = (nowHs * B % MOD + ch) % MOD;
+    }
+
+    return nowHs;
 }

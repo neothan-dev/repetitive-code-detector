@@ -18,6 +18,8 @@
 #include <filesystem>
 #include <array>
 #include <cstring>
+#include <set>
+#include <unordered_set>
 
 #include "util.h"
 
